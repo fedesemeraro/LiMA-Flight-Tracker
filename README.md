@@ -15,3 +15,5 @@ therefore requiring processing. Here is where my role lies: creating smart algor
 data can enable effective visualizations and statistics useful to a very wide range of applications. 
 The airlines' usage of Airbus products can be studied and compared to the performance of other manufacturers, 
 which can then influence engineering and marketing decisions.
+
+A live demo of the app can be found at: https://federicosemeraro.shinyapps.io/fr24_analysistool/
