@@ -1,0 +1,337 @@
+---
+title: <center>`r input$filetitle`<center>
+author: <center> `r input$firstname` `r input$lastname`, `r input$guytitle`<center>
+date: <center>`r format(Sys.time(), '%d %B, %Y')`<center>
+abstract: Data from *__Flight Radar 24__* Database has been captured, processed and analysed;  this report shows the findings in form of tables and graphs related to `r nrow(FlightSummary())` flights for `r length(unique(unlist(FlightSummary()$AC_type)))` fleet(s) (i.e. `r paste(unique(unlist(FlightSummary()$AC_type)), collapse=", ")`) and `r length(unique(unlist(FlightSummary()$Operator)))` airline(s) (i.e. `r paste(ifelse(is.na(unique(unlist(FlightSummary()$Operator))[1:5]), "", unique(unlist(FlightSummary()$Operator))[1:5]), collapse=", ")``r ifelse(length(unique(unlist(FlightSummary()$Operator)))>5,"...","")`). The three main analysis developed are Turn Around Time (TAT), Range vs Duration and Taxi Times for different views (i.e. Fleet, Airline, Flight Number, MSN and Airport).
+#runtime: shiny 
+---
+
+\tableofcontents
+\newpage
+
+
+<!-- ---------------------------------------------------------------------------------------- -->
+<!-- PACKAGES -->
+<!-- ---------------------------------------------------------------------------------------- -->
+
+``` {r, echo=F} 
+library(ggplot2)
+```
+
+
+
+<!-- ---------------------------------------------------------------------------------------- -->
+<!-- TAT -->
+<!-- ---------------------------------------------------------------------------------------- -->
+## Turn Around Time Analysis
+
+In this section the **Turn Around Time** of the data loaded is analysed and several graphs are plotted.
+``` {r, echo=F} 
+p1 <- ggplot(FlightSummary(), aes(x=Destination, y=TAT_hrs)) +
+  geom_bar(aes(fill=Operator), stat="identity", position="identity") +
+  facet_wrap(~ AC_type, scales = "free", ncol = 1) +
+  labs(x = "Airport") +
+  labs(y = "TAT (hrs)") +
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_y_continuous(limits = c(0, max(FlightSummary()$TAT_hrs, na.rm = TRUE)))
+print(p1)
+
+# ### Duration vs TAT
+# # Fleet View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = TAT_hrs) ~ AC_type, FlightSummary(), mean), by = "AC_type")
+# p2 <- ggplot(gg, aes(FlightTime_hrs, TAT_hrs, color=factor(AC_type))) + 
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = FlightTime_hrs, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = AC_type), size=4, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   labs(x = "Duration (hrs)") +
+#   labs(y = "TAT (hrs)") + 
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Airline View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = TAT_hrs) ~ Operator, FlightSummary(), mean), by = "Operator")
+# p3 <- ggplot(gg, aes(FlightTime_hrs, TAT_hrs, color=factor(Operator))) + 
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = FlightTime_hrs, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Operator), size=3, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   theme(legend.position="none") +
+#   labs(x = "Duration (hrs)") +
+#   labs(y = "TAT (hrs)") + 
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Flight Number View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = TAT_hrs) ~ FlightNumber, FlightSummary(), mean), by = "FlightNumber")
+# p4 <- ggplot(gg, aes(FlightTime_hrs, TAT_hrs, color=factor(FlightNumber))) +
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = FlightTime_hrs, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = FlightNumber), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "Duration (hrs)") +
+#   labs(y = "TAT (hrs)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$FlightTime_hrs, na.rm = TRUE))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$TAT_hrs, na.rm = TRUE)))
+# 
+# # MSN View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = TAT_hrs) ~ Registration, FlightSummary(), mean), by = "Registration")
+# p5 <- ggplot(gg, aes(FlightTime_hrs, TAT_hrs, color=factor(Registration))) +
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = FlightTime_hrs, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Registration), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "Duration (hrs)") +
+#   labs(y = "TAT (hrs)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$FlightTime_hrs, na.rm = TRUE))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$TAT_hrs, na.rm = TRUE)))
+# 
+# 
+# ### TAT vs Range
+# # Fleet View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = GCD_km, mean.y = TAT_hrs) ~ AC_type, FlightSummary(), mean), by = "AC_type")
+# p6 <- ggplot(gg, aes(GCD_km, TAT_hrs, color=factor(AC_type))) + 
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = GCD_km, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = AC_type), size=4, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   labs(x = "Range (km)") +
+#   labs(y = "TAT (hrs)") +
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Airline View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = GCD_km, mean.y = TAT_hrs) ~ Operator, FlightSummary(), mean), by = "Operator")
+# p7 <- ggplot(gg, aes(GCD_km, TAT_hrs, color=factor(Operator))) + 
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = GCD_km, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Operator), size=3, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   theme(legend.position="none") +
+#   labs(x = "Range (km)") +
+#   labs(y = "TAT (hrs)") +
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Flight Number View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = GCD_km, mean.y = TAT_hrs) ~ FlightNumber, FlightSummary(), mean), by = "FlightNumber")
+# p8 <- ggplot(gg, aes(GCD_km, TAT_hrs, color=factor(FlightNumber))) +
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = GCD_km, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = FlightNumber), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "Range (km)") +
+#   labs(y = "TAT (hrs)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$GCD_km, na.rm = TRUE))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$TAT_hrs, na.rm = TRUE)))
+# 
+# # MSN View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = GCD_km, mean.y = TAT_hrs) ~ Registration, FlightSummary(), mean), by = "Registration")
+# p9 <- ggplot(gg, aes(GCD_km, TAT_hrs, color=factor(Registration))) +
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = GCD_km, yend = TAT_hrs), alpha=1/6) + 
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Registration), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "Range (km)") +
+#   labs(y = "TAT (hrs)") + 
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$GCD_km, na.rm = TRUE))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$TAT_hrs, na.rm = TRUE)))
+# 
+# # Printing 
+# print(p1)
+# print(p2)
+# print(p3)
+# print(p4)
+# print(p5)
+# print(p6)
+# print(p7)
+# print(p8)
+# print(p9)
+# ```
+# \newpage
+# 
+# 
+# <!-- ---------------------------------------------------------------------------------------- -->
+# <!-- RANGE vs DURATION -->
+# <!-- ---------------------------------------------------------------------------------------- -->
+# ## Range v.s. Duration
+# 
+# <!-- In this section the **Range** of the loaded flights is plotted against the **Flight Time**. -->
+# ``` {r, echo=F} 
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = GCD_km) ~ AC_type, FlightSummary(), mean), by = "AC_type")
+# p10 <- ggplot(gg, aes(FlightTime_hrs, GCD_km, color=factor(AC_type))) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = AC_type), size=4, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   labs(x = "Duration (hrs)") +
+#   labs(y = "Range (km)") + 
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Airline View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = GCD_km) ~ Operator, FlightSummary(), mean), by = "Operator")
+# p11 <- ggplot(gg, aes(FlightTime_hrs, GCD_km, color=factor(Operator))) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Operator), size=3, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   theme(legend.position="none") +
+#   labs(x = "FlightTime_hrs") +
+#   labs(y = "Range (km)") +
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Flight Number View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = GCD_km) ~ FlightNumber, FlightSummary(), mean), by = "FlightNumber")
+# p12 <- ggplot(gg, aes(FlightTime_hrs, GCD_km, color=factor(FlightNumber))) +
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = FlightNumber), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(title = "Flight Number View") +
+#   labs(x = "FlightTime_hrs") +
+#   labs(y = "Range (km)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$FlightTime_hrs, na.rm = TRUE))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$GCD_km, na.rm = TRUE)))
+# 
+# # MSN View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = FlightTime_hrs, mean.y = GCD_km) ~ Registration, FlightSummary(), mean), by = "Registration")
+# p13 <- ggplot(gg, aes(FlightTime_hrs, GCD_km, color=factor(Registration))) +
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Registration), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "FlightTime_hrs") +
+#   labs(y = "Range (km)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$FlightTime_hrs, na.rm = TRUE))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, max(FlightSummary()$GCD_km, na.rm = TRUE)))
+# 
+# # Printing
+# print(p10)
+# print(p11)
+# print(p12)
+# print(p13)
+# ```
+# \newpage
+# 
+# 
+# <!-- ---------------------------------------------------------------------------------------- -->
+# <!-- TAXI TIMES -->
+# <!-- ---------------------------------------------------------------------------------------- -->
+# ## Taxi Times
+# 
+# ``` {r, echo=F}
+# ### Taxi OUT vs Taxi IN
+# # Fleet View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = Taxi.IN_mins, mean.y = Taxi.OUT_mins) ~ AC_type, FlightSummary(), mean), by = "AC_type")
+# p14 <- ggplot(gg, aes(Taxi.IN_mins, Taxi.OUT_mins, color=factor(AC_type))) + 
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = Taxi.IN_mins, yend = Taxi.OUT_mins), alpha=1/6) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = AC_type), size=4, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   labs(x = "Taxi IN (mins)") +
+#   labs(y = "Taxi OUT (mins)") +
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# # Airline View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = Taxi.IN_mins, mean.y = Taxi.OUT_mins) ~ Operator, FlightSummary(), mean), by = "Operator")
+# p15 <- ggplot(gg, aes(Taxi.IN_mins, Taxi.OUT_mins, color=factor(Operator))) + 
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = Taxi.IN_mins, yend = Taxi.OUT_mins), alpha=1/6) + 
+#   geom_point(size=1) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Operator), size=3, shape = 21, color = "Black") + 
+#   theme(aspect.ratio = 1) +
+#   theme(legend.position="none") +
+#   labs(x = "Taxi IN (mins)") +
+#   labs(y = "Taxi OUT (mins)") +
+#   scale_x_continuous(breaks = waiver()) +
+#   scale_y_continuous(breaks = waiver())
+# 
+# Airline HEXBIN
+gg <- merge(FlightSummary(), aggregate(cbind(mean.x = Taxi.IN_mins, mean.y = Taxi.OUT_mins) ~ AC_type, FlightSummary(), mean), by = "AC_type")
+p16 <- ggplot(FlightSummary(), aes(x=Taxi.IN_mins,y=Taxi.OUT_mins)) +
+  #stat_bin2d()+
+  geom_hex(bins=75, color = "grey") +
+  scale_fill_gradientn(colours = rainbow(11)) +
+  coord_cartesian(xlim=c(0,90),ylim=c(0,90)) +
+  #geom_hline(yintercept = 77)+
+  #geom_vline(xintercept = 0.25) +
+  ggtitle("Taxi Times") +
+  facet_wrap(~ AC_type, ncol = 2, scales = "free") +
+  theme(aspect.ratio = 1) +
+  theme(plot.title = element_text(lineheight=.8, face="bold",color="grey", vjust = 1)) +
+  scale_x_continuous(name="Taxi IN", limits = c(0, max(FlightSummary()$Taxi.IN_mins, na.rm = TRUE))) +
+  scale_y_continuous(name="Taxi OUT", limits = c(0, max(FlightSummary()$Taxi.OUT_mins, na.rm = TRUE))) +
+  geom_point(data = gg, aes(x=mean.x, y=mean.y), shape = 10, color= "grey1",  size=5) +
+  geom_text(data = gg,aes(x=mean.x, y=mean.y,label="Mean"),size=4, vjust = 1.5)
+print(p16)
+# 
+# # Flight Number View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = Taxi.IN_mins, mean.y = Taxi.OUT_mins) ~ FlightNumber, FlightSummary(), mean), by = "FlightNumber")
+# p17 <- ggplot(gg, aes(Taxi.IN_mins, Taxi.OUT_mins, color=factor(FlightNumber))) +
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = Taxi.IN_mins, yend = Taxi.OUT_mins), alpha=1/6) + 
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = FlightNumber), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "Taxi IN (mins)") +
+#   labs(y = "Taxi OUT (mins)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, ifelse(max(gg$mean.x, na.rm = TRUE) > max(gg$mean.y, na.rm = TRUE), 
+#                                                              max(gg$mean.x, na.rm = TRUE), max(gg$mean.y, na.rm = TRUE)))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, ifelse(max(gg$mean.x, na.rm = TRUE) > max(gg$mean.y, na.rm = TRUE), 
+#                                                              max(gg$mean.x, na.rm = TRUE), max(gg$mean.y, na.rm = TRUE))))
+# 
+# # MSN View
+# gg <- merge(FlightSummary(), aggregate(cbind(mean.x = Taxi.IN_mins, mean.y = Taxi.OUT_mins) ~ Registration, FlightSummary(), mean), by = "Registration")
+# p18 <- ggplot(gg, aes(Taxi.IN_mins, Taxi.OUT_mins, color=factor(Registration))) +
+#   geom_segment(color = "steelblue", aes(x = mean.x, y = mean.y, xend = Taxi.IN_mins, yend = Taxi.OUT_mins), alpha=1/6) + 
+#   geom_point(size = 0.5) +
+#   geom_point(aes(x = mean.x, y = mean.y, fill = Registration), size = 2, shape = 21, color = "Black") +
+#   theme(aspect.ratio = 1) +
+#   facet_wrap(~ AC_type, scales = "free") +
+#   labs(x = "Taxi IN (mins)") +
+#   labs(y = "Taxi OUT (mins)") +
+#   theme(legend.position="none") +
+#   scale_x_continuous(breaks = waiver(), limits = c(0, ifelse(max(gg$mean.x, na.rm = TRUE) > max(gg$mean.y, na.rm = TRUE), 
+#                                                              max(gg$mean.x, na.rm = TRUE), max(gg$mean.y, na.rm = TRUE)))) +
+#   scale_y_continuous(breaks = waiver(), limits = c(0, ifelse(max(gg$mean.x, na.rm = TRUE) > max(gg$mean.y, na.rm = TRUE), 
+#                                                              max(gg$mean.x, na.rm = TRUE), max(gg$mean.y, na.rm = TRUE))))
+# 
+# # ### Airport View - Departure
+# # gg <- merge(FlightSummary(), aggregate(cbind(mean.y = Taxi.OUT_mins) ~ Departure, FlightSummary(), mean), by = "Departure")
+# # gg <- merge(gg, aggregate(cbind(mean.x = Taxi.IN_mins) ~ Destination, FlightSummary(), mean), by = "Destination")
+# # gg <- merge(gg[,c(2,33)],gg[,c(1,34)], by.x = "Departure", by.y = "Destination")
+# # gg <- rename(gg, c("Departure"="Airport"))
+# # gg <- gg[!duplicated(gg$Airport, gg$mean.x, gg$mean.y),]
+# # p19 <- ggplot(gg, aes(Taxi.IN_mins, Taxi.OUT_mins, color=factor(Airport))) +
+# #   geom_point(aes(x = mean.x, y = mean.y, fill = factor(Airport)), size = 4, shape = 21, color = "Black") +
+# #   theme(aspect.ratio = 1) +
+# #   labs(x = "Taxi IN (mins)") +
+# #   labs(y = "Taxi OUT (mins)") +
+# #   theme(legend.position="none") +
+# #   scale_x_continuous(breaks = waiver(), limits = c(0, ifelse(max(gg$mean.x, na.rm = TRUE) > max(gg$mean.y, na.rm = TRUE),
+# #                                                              max(gg$mean.x, na.rm = TRUE), max(gg$mean.y, na.rm = TRUE)))) +
+# #   scale_y_continuous(breaks = waiver(), limits = c(0, ifelse(max(gg$mean.x, na.rm = TRUE) > max(gg$mean.y, na.rm = TRUE),
+# #                                                              max(gg$mean.x, na.rm = TRUE), max(gg$mean.y, na.rm = TRUE))))
+# # Printing
+# print(p14)
+# print(p15)
+# print(p16)
+# print(p17)
+# print(p18)
+# # print(p19)
+# ```
+# \newpage
+# 
+
